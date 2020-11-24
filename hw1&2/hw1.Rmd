@@ -1,0 +1,59 @@
+---
+title: "CMSC 3375 Homework 1"
+author: "Isabelle Hu"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+Download some RNA-seq data from the TCGA head and neckcancer project (TCGA-HNSC), explore the data, and create a histogram of the counts (from at leastone) of the samples.
+
+```{r setup, include=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+library(TCGAbiolinks)
+library(rmarkdown)
+```
+
+```{r "direcroties setup"}
+DataDirectory <- paste0("./GDC/", gsub("-","_","HNSC"))
+FileNameData <- paste0(DataDirectory, "_","HTSeq_Counts",".rda")
+```
+
+```{r}
+# query TCGA-HNSC RNA-seq data
+query1 <- GDCquery(project = "TCGA-HNSC",
+                   data.category = "Transcriptome Profiling",
+                   data.type = "Gene Expression Quantification",
+                   workflow.type = "HTSeq - Counts")
+```
+
+```{r}
+# get cases for tumor primary (TP)
+samplesDown <- getResults(query1, cols=c("cases"))
+a.cases.TP <- TCGAquery_SampleTypes(barcode = samplesDown, typesample = "TP")
+a.cases.sample <- a.cases.TP[1:20]
+```
+
+
+```{r}
+# query and download sample data
+query2 <- GDCquery(project = "TCGA-HNSC",
+                   data.category = "Transcriptome Profiling",
+                   data.type = "Gene Expression Quantification",
+                   workflow.type = "HTSeq - Counts",
+                   barcode = a.cases.sample)
+GDCdownload(query = query2, directory = DataDirectory)
+```
+
+```{r}
+# pick one patient to load counts data
+a.counts <- read.table("./GDC/HNSC/TCGA-HNSC/harmonized/Transcriptome_Profiling/Gene_Expression_Quantification/0aae20cd-2601-4c12-a00f-d5f8bad66be5/ee00edb2-f47a-4d1b-a2e7-3441cfdb29f6.htseq.counts.txt")
+# histogram of counts
+hist(a.counts[,2])
+```
+
+Most genes have zero or very low counts, overwhelming visualization of other gene counts. So I applied log transformation to the counts and replotted the histogram below.
+```{r}
+# histogram of ln(counts)
+hist(log(a.counts[,2]))
+```
+
